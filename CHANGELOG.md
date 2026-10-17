@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1
+
+- Updated release version metadata to 1.1.1.
+- Prepared the supplied Velora mod JAR for Minecraft 1.21.11.
+
 ## 1.0.1
 
 - Initial versioned starter release for Velora.
