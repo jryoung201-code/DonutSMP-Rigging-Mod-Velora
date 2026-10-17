@@ -1,4 +1,4 @@
-name: Build and Release Velora
+name: Build and Release Mod Only
 
 on:
   push:
@@ -28,22 +28,29 @@ jobs:
       - name: Build mod
         run: gradle clean build --no-daemon
 
-      - name: Upload build artifacts
+      - name: Prepare mod JAR only
+        shell: bash
+        run: |
+          mkdir -p release
+          find build/libs -maxdepth 1 -type f -name 'velora-*.jar' ! -name '*-sources.jar' -exec cp {} release/ \;
+          if [ -z "$(find release -maxdepth 1 -type f -name '*.jar' -print -quit)" ]; then
+            echo "No mod JAR found in build/libs."
+            exit 1
+          fi
+          ls -lh release/
+
+      - name: Upload mod JAR artifact
         uses: actions/upload-artifact@v4
         with:
-          name: velora-${{ github.ref_name }}
-          path: |
-            build/libs/*[!sources].jar
-            build/libs/*-sources.jar
+          name: velora-mod-${{ github.ref_name }}
+          path: release/*.jar
           if-no-files-found: error
           retention-days: 30
 
-      - name: Create GitHub Release
+      - name: Create GitHub Release with mod JAR only
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           name: Velora ${{ github.ref_name }}
           generate_release_notes: true
-          files: |
-            build/libs/*[!sources].jar
-            build/libs/*-sources.jar
+          files: release/*.jar
