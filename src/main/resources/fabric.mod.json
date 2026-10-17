@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "velora",
+  "version": "${version}",
+  "name": "Velora",
+  "description": "A lightweight client-side Minecraft utility focused on customization and convenience.",
+  "authors": ["JRY"],
+  "environment": "client",
+  "entrypoints": {
+    "client": ["dev.jry.velora.VeloraClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.18.1",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
