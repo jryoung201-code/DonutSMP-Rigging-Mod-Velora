@@ -1,9 +1,10 @@
 # Changelog
 
-## 1.1.9-pre
+## 1.1.9-pre-2
 
-- Prepare a prerelease build with the current visual item mapping and Dropper slot layout fixes.
-- Attach the compiled mod JAR to the GitHub prerelease when the `v1.1.9-pre` tag is pushed.
+- Continue the prerelease with the latest correction to use the displayed inventory number when calculating the Dropper's visual vacancy.
+- Validate the item-identity mapping and visual slot permutation with the existing regression tests.
+- Attach the compiled mod JAR to the GitHub prerelease when the `v1.1.9-pre-2` tag is pushed.
 
 ## 1.1.8f
 
