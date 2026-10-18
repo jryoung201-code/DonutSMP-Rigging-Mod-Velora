@@ -139,7 +139,9 @@ public final class DisplayResolver {
 				if (serverNumber.isEmpty()) {
 					continue;
 				}
-				int targetSlot = serverNumber.getAsInt() - 1;
+				// The visible number (e.g. 6) determines the vacancy position (zero-based 5).
+				// Do not use the reverse-mapped server number here; that caused 6 to target slot 1.
+				int targetSlot = Integer.parseInt(displayedName.trim()) - 1;
 				if (targetSlot >= 0 && targetSlot < containerSlots.length
 						&& occupied[targetSlot] && targetSlot != emptySource) {
 					int[] requestedDestinations = new int[DisplayPattern.SLOT_COUNT];
