@@ -55,17 +55,8 @@ public final class DisplayResolver {
 			return Optional.empty();
 		}
 
-		// For the 3x3 container, the tooltip must follow the slot's visual destination,
-		// not the item's original custom name. Otherwise an item moved by the pattern can
-		// render in slot 2 while its tooltip still says 6.
-		if (screen.getScreenHandler() instanceof net.minecraft.screen.Generic3x3ContainerScreenHandler
-				&& VeloraConfig.get().mode == DisplayMode.ITEM_NAMES) {
-			OptionalInt visualPosition = visualContainerPosition(screen, slot);
-			if (visualPosition.isPresent()) {
-				int visualNumber = visualPosition.getAsInt() + 1;
-				return Optional.of(new SlotDisplay(String.valueOf(visualNumber), visualNumber, null));
-			}
-		}
+		// Use the configured replacement label for tooltips too, including inside
+		// a 3x3 container. The actual slot's visual destination is handled separately.
 		return resolve(slot.getStack(), position.getAsInt());
 	}
 
@@ -144,11 +135,12 @@ public final class DisplayResolver {
 				}
 				String serverName = inventoryStack.get(DataComponentTypes.CUSTOM_NAME) == null
 						? null : inventoryStack.get(DataComponentTypes.CUSTOM_NAME).getString();
-				// The numeric custom name controls the mapping, irrespective of item type.
-				OptionalInt displayedNumber = ItemNameMapping.mappedNumber(serverName, config.itemNameMappings);
-				if (displayedNumber.isEmpty()) {
+				Optional<ItemNameMapping.MappingResult> match = ItemNameMapping.resolve(
+						serverName, config.lowerNameMappings, config.higherNameMappings);
+				if (match.isEmpty() || match.get().displayedNumber().isEmpty()) {
 					continue;
 				}
+				OptionalInt displayedNumber = match.get().displayedNumber();
 				int targetSlot = displayedNumber.getAsInt() - 1;
 				if (targetSlot >= 0 && targetSlot < containerSlots.length
 						&& occupied[targetSlot] && targetSlot != emptySource) {
@@ -203,11 +195,13 @@ public final class DisplayResolver {
 		String realName = stack.get(DataComponentTypes.CUSTOM_NAME) == null
 				? null
 				: stack.get(DataComponentTypes.CUSTOM_NAME).getString().trim();
-		OptionalInt number = ItemNameMapping.mappedNumber(realName, config.itemNameMappings);
-		if (number.isEmpty()) {
+		Optional<ItemNameMapping.MappingResult> match = ItemNameMapping.resolve(
+				realName, config.lowerNameMappings, config.higherNameMappings);
+		if (match.isEmpty()) {
 			return Optional.empty();
 		}
-		return Optional.of(new SlotDisplay(String.valueOf(number.getAsInt()), number.getAsInt(), null));
+		int number = match.get().displayedNumber().orElse(0);
+		return Optional.of(new SlotDisplay(match.get().displayedName(), number, null));
 	}
 
 	private static Optional<SlotDisplay> resolveMap(VeloraConfig config, ItemStack stack, int position) {

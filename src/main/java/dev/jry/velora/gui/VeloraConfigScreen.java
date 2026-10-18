@@ -153,9 +153,10 @@ public class VeloraConfigScreen extends Screen {
 		y += 12;
 
 		if (config.mode == DisplayMode.ITEM_NAMES) {
-			drawRow(context, "Name", left, cellsStart, y, 0xFFFFFF55, DisplayPattern.NORMAL::number);
-			y += 12;
-			drawRow(context, "Shown as", left, cellsStart, y, 0xFF55FFFF, i -> config.itemNameMappings[i]);
+			context.drawTextWithShadow(this.textRenderer,
+					Text.literal("Lower rules: " + config.lowerNameMappings.size()
+							+ "   Higher rules: " + config.higherNameMappings.size()),
+					left, y, 0xFFFFFF55);
 		} else {
 			drawRow(context, "Map art", left, cellsStart, y, 0xFFFFFF55, config.pattern::number);
 			y += 13;

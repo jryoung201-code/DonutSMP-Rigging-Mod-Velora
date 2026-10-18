@@ -1,37 +1,51 @@
 package dev.jry.velora.display;
 
-import dev.jry.velora.config.DisplayPattern;
+import dev.jry.velora.config.VeloraConfig;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.OptionalInt;
 
-/** Resolves numeric custom names independently of Minecraft item identity and inventory slot. */
+/** Resolves typed custom-name mappings without depending on the Minecraft item type. */
 public final class ItemNameMapping {
 	private ItemNameMapping() {
 	}
 
-	/**
-	 * Maps an item's numeric custom name (1-9) to its configured display number.
-	 * There is intentionally no item-id argument: any item with the same custom name
-	 * receives the same mapping.
-	 */
-	public static OptionalInt mappedNumber(String customName, int[] nameMappings) {
-		if (customName == null || nameMappings == null || nameMappings.length < DisplayPattern.SLOT_COUNT) {
-			return OptionalInt.empty();
-		}
-		String name = customName.trim();
-		if (!name.matches("[1-9]")) {
-			return OptionalInt.empty();
-		}
-		int displayNumber = nameMappings[Integer.parseInt(name) - 1];
-		if (displayNumber < 1 || displayNumber > DisplayPattern.SLOT_COUNT) {
-			return OptionalInt.empty();
-		}
-		return OptionalInt.of(displayNumber);
+	/** A matched display label, plus a numeric slot target when the replacement is 1-9. */
+	public record MappingResult(String displayedName, OptionalInt displayedNumber) {
 	}
 
-	/** Returns the target display slot for a numeric name, otherwise its original source slot. */
-	public static int destination(String customName, int sourcePosition, int[] nameMappings) {
-		OptionalInt mapped = mappedNumber(customName, nameMappings);
-		return mapped.isPresent() ? mapped.getAsInt() - 1 : sourcePosition;
+	/**
+	 * Maps a received name to its configured replacement. Lower rules are checked first;
+	 * keep received names unique across both groups when different outputs are desired.
+	 */
+	public static Optional<MappingResult> resolve(String receivedName,
+			List<VeloraConfig.ItemNameRule> lowerRules,
+			List<VeloraConfig.ItemNameRule> higherRules) {
+		if (receivedName == null || receivedName.trim().isEmpty()) {
+			return Optional.empty();
+		}
+		String normalized = receivedName.trim();
+		Optional<MappingResult> lower = find(normalized, lowerRules);
+		return lower.isPresent() ? lower : find(normalized, higherRules);
+	}
+
+	private static Optional<MappingResult> find(String receivedName, List<VeloraConfig.ItemNameRule> rules) {
+		if (rules == null) {
+			return Optional.empty();
+		}
+		for (VeloraConfig.ItemNameRule rule : rules) {
+			if (rule == null || !rule.enabled || rule.receivedName == null || rule.displayedName == null
+					|| rule.receivedName.trim().isEmpty() || rule.displayedName.trim().isEmpty()) {
+				continue;
+			}
+			if (receivedName.equalsIgnoreCase(rule.receivedName.trim())) {
+				String replacement = rule.displayedName.trim();
+				OptionalInt number = replacement.matches("[1-9]")
+						? OptionalInt.of(Integer.parseInt(replacement)) : OptionalInt.empty();
+				return Optional.of(new MappingResult(replacement, number));
+			}
+		}
+		return Optional.empty();
 	}
 }

@@ -38,8 +38,28 @@ public final class VeloraConfig {
 
 	public DisplayMode mode = DisplayMode.ITEM_NAMES;
 	public DisplayPattern pattern = DisplayPattern.NORMAL;
-	/** Display number for each numeric custom name (1-9), independent of item type. */
+	/** Editable source-name -> displayed-name rules for the Lower group. */
+	public List<ItemNameRule> lowerNameMappings = new ArrayList<>();
+	/** Editable source-name -> displayed-name rules for the Higher group. */
+	public List<ItemNameRule> higherNameMappings = new ArrayList<>();
+	/** Legacy numeric mapping array retained only to migrate older config files. */
+	@Deprecated
 	public int[] itemNameMappings;
+
+	public static final class ItemNameRule {
+		public String receivedName = "";
+		public String displayedName = "";
+		public boolean enabled = true;
+
+		public ItemNameRule() {
+		}
+
+		public ItemNameRule(String receivedName, String displayedName, boolean enabled) {
+			this.receivedName = receivedName;
+			this.displayedName = displayedName;
+			this.enabled = enabled;
+		}
+	}
 	public boolean map9LocalOverride = false;
 	public String winItem = DEFAULT_WIN_ITEM;
 	public String loseItem = DEFAULT_LOSE_ITEM;
@@ -171,24 +191,25 @@ public final class VeloraConfig {
 		if (pattern == null) {
 			pattern = DisplayPattern.NORMAL;
 		}
-		// Migrate older configs that picked one ITEM1 and one ITEM2. Carry over the
-		// previous ITEM2 sequence as a default, now applying it to every item type.
-		if (itemNameMappings == null || itemNameMappings.length != DisplayPattern.SLOT_COUNT) {
-			int[] migrated = new int[DisplayPattern.SLOT_COUNT];
-			for (int i = 0; i < migrated.length; i++) {
-				migrated[i] = pattern.higherNumber(i);
-			}
-			if (itemNameMappings != null) {
-				System.arraycopy(itemNameMappings, 0, migrated, 0,
-						Math.min(itemNameMappings.length, migrated.length));
-			}
-			itemNameMappings = migrated;
+		if (lowerNameMappings == null) {
+			lowerNameMappings = new ArrayList<>();
 		}
-		for (int i = 0; i < itemNameMappings.length; i++) {
-			if (itemNameMappings[i] < 1 || itemNameMappings[i] > DisplayPattern.SLOT_COUNT) {
-				itemNameMappings[i] = pattern.higherNumber(i);
+		if (higherNameMappings == null) {
+			higherNameMappings = new ArrayList<>();
+		}
+		// Migrate older numeric arrays into editable Higher-group rules.
+		if (lowerNameMappings.isEmpty() && higherNameMappings.isEmpty()
+				&& itemNameMappings != null && itemNameMappings.length > 0) {
+			for (int i = 0; i < Math.min(itemNameMappings.length, DisplayPattern.SLOT_COUNT); i++) {
+				int output = itemNameMappings[i];
+				if (output >= 1 && output <= DisplayPattern.SLOT_COUNT) {
+					higherNameMappings.add(new ItemNameRule(Integer.toString(i + 1), Integer.toString(output), true));
+				}
 			}
 		}
+		itemNameMappings = null;
+		lowerNameMappings.removeIf(rule -> rule == null);
+		higherNameMappings.removeIf(rule -> rule == null);
 		if (!isValidItem(winItem)) {
 			winItem = DEFAULT_WIN_ITEM;
 		}

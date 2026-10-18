@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.9-pre-9
+
+- Add typed received-name and displayed-name fields for mappings, with separate Lower and Higher rule groups.
+- Add per-rule enable/disable and removal controls, plus support for adding more mappings.
+- Apply name-only matches across Minecraft item types; numeric replacement names continue to control visual slot destinations.
+
 ## 1.1.9-pre-8
 
 - Remove the ITEM1 and ITEM2 item-type selectors from settings.
