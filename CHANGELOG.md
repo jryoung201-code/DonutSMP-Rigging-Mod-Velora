@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.9-pre-7
+
+- Revert the pre-6 change that kept numbered Dropper items in their original slots; restore the previous pattern-driven visual-slot behavior.
+- Preserve the build workflow's cancellation of older runs when newer commits arrive.
+
 ## 1.1.9-pre-6
 
 - Stop visually repositioning Dropper/Dispenser items based on ITEM1/ITEM2 patterns.
