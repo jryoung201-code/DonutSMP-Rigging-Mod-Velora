@@ -1,21 +1,5 @@
 # Changelog
 
-## 1.1.9-pre-7
-
-- Revert the pre-6 change that kept numbered Dropper items in their original slots; restore the previous pattern-driven visual-slot behavior.
-- Preserve the build workflow's cancellation of older runs when newer commits arrive.
-
-## 1.1.9-pre-6
-
-- Stop visually repositioning Dropper/Dispenser items based on ITEM1/ITEM2 patterns.
-- Keep each numbered item in its original slot and show its original number in the container tooltip (for example, "2" instead of the mapped "6").
-- Preserve configured ITEM1/ITEM2 pattern mapping outside the 3x3 container; no server inventory data is changed.
-
-## 1.1.9-pre-5
-
-- Package the latest Dropper visual-slot tooltip correction under prerelease version 1.1.9-pre-5.
-- Keep the configured ITEM1/ITEM2 pattern mapping and client-side-only behavior.
-
 ## 1.1.9-pre-4
 
 - Use the configured ITEM1/ITEM2 patterns for Dropper item labels and visual-vacancy mapping.
@@ -51,7 +35,7 @@
 
 - Visually reposition numbered items in Dropper and Dispenser 3x3 layouts, allowing the vacant slot to appear at the corresponding mapped position.
 - Offset only item icons and stack-count overlays; real slot contents, indices, hit targets, clicks, and server transfers remain unchanged.
-- Resolve duplicate mapped destinations deterministically in slot order, then place remaining items and empty slots into unclaimed positions.
+- Resolve duplicate mapped destinations deterministically in slot order, then place remaining items and empty slots into unclaimed destinations in slot order.
 
 ## 1.1.6
 
