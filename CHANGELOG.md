@@ -2,8 +2,8 @@
 
 ## 1.1.9-pre-3
 
-- Keep the actual server-side item number visible in the Dropper: a book named "2" displays as 2, not 6.
-- Align the visual vacancy with that actual number, so server number 2 makes the second slot appear empty.
+- Resolve the displayed number from the configured ITEM1/ITEM2 identity and selected pattern.
+- Make the Dropper's visual vacancy follow that mapped number, so Pattern A maps ITEM1 and ITEM2 according to their respective configured sequences.
 - Keep the change client-side only; real server inventory and transactions are untouched.
 - Attach the compiled mod JAR to the GitHub prerelease when the `v1.1.9-pre-2` tag is pushed.
 
