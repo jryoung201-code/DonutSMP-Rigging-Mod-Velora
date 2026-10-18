@@ -15,6 +15,7 @@ jobs:
     outputs:
       version_tag: ${{ steps.version.outputs.tag }}
       tag_created: ${{ steps.autotag.outputs.created }}
+      jar_path: ${{ steps.package.outputs.jar_path }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,26 +35,31 @@ jobs:
             exit 1
           fi
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          echo "jar_name=velora-$version.jar" >> "$GITHUB_OUTPUT"
           echo "Building Velora version $version"
       - name: Build mod
         run: ./gradlew clean build --no-daemon
-      - name: Move current mod JAR into release
+      - name: Package current version JAR only
+        id: package
         shell: bash
+        env:
+          EXPECTED_JAR: ${{ steps.version.outputs.jar_name }}
         run: |
+          set -euo pipefail
           mkdir -p release
-          shopt -s nullglob
-          mod_jars=()
-          for jar in build/libs/velora-*.jar; do
-            if [[ "$jar" != *"-sources.jar" ]]; then
-              mod_jars+=("$jar")
-            fi
-          done
-          if [ "${#mod_jars[@]}" -eq 0 ]; then
-            echo "No mod JAR found in build/libs."
+          source_jar="build/libs/$EXPECTED_JAR"
+          if [ ! -f "$source_jar" ]; then
+            echo "Expected current version JAR not found: $source_jar"
+            echo "Available JARs:"
+            find build/libs -maxdepth 1 -type f -name '*.jar' -print
             exit 1
           fi
-          cp "${mod_jars[0]}" release/
-          ls -lh release/
+          # Start clean and copy exactly one file. Never attach old version JARs.
+          rm -f release/*.jar
+          cp "$source_jar" "release/$EXPECTED_JAR"
+          echo "jar_path=release/$EXPECTED_JAR" >> "$GITHUB_OUTPUT"
+          find release -maxdepth 1 -type f -name '*.jar' -printf '%f\n'
+          test "$(find release -maxdepth 1 -type f -name '*.jar' | wc -l)" -eq 1
       - name: Automatically create version tag for main
         id: autotag
         if: github.ref == 'refs/heads/main'
@@ -62,6 +68,7 @@ jobs:
           VERSION_TAG: ${{ steps.version.outputs.tag }}
         shell: bash
         run: |
+          set -euo pipefail
           if git ls-remote --exit-code --tags origin "refs/tags/$VERSION_TAG" >/dev/null 2>&1; then
             echo "Tag $VERSION_TAG already exists; not overwriting it."
             echo "created=false" >> "$GITHUB_OUTPUT"
@@ -72,14 +79,14 @@ jobs:
           git tag -a "$VERSION_TAG" -m "Velora $VERSION_TAG"
           git push origin "$VERSION_TAG"
           echo "created=true" >> "$GITHUB_OUTPUT"
-      - name: Upload mod JAR artifact
+      - name: Upload current version JAR artifact
         uses: actions/upload-artifact@v4
         with:
           name: velora-mod-${{ steps.version.outputs.tag }}
-          path: release/*.jar
+          path: ${{ steps.package.outputs.jar_path }}
           if-no-files-found: error
           retention-days: 30
-      - name: Create GitHub Release with mod JAR
+      - name: Create GitHub Release with current version JAR only
         if: (github.ref == 'refs/heads/main' && steps.autotag.outputs.created == 'true') || startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
@@ -87,4 +94,4 @@ jobs:
           name: Velora ${{ steps.version.outputs.tag }}
           generate_release_notes: true
           prerelease: ${{ contains(steps.version.outputs.tag, '-pre') }}
-          files: release/*.jar
+          files: ${{ steps.package.outputs.jar_path }}
