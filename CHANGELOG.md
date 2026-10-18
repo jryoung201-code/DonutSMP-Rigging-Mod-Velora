@@ -1,14 +1,7 @@
 # Changelog
 
-## 1.1.1
-
-- Updated release version metadata to 1.1.1.
-- Prepared the supplied Velora mod JAR for Minecraft 1.21.11.
-
-## 1.0.1
-
-- Initial versioned starter release for Velora.
-- Added a Right Shift settings screen.
-- Added saved Normal/A pattern selection.
-- Added a local visual pattern preview toggle.
-- Added automated build and GitHub Release workflow.
+## 1.1.2
+- Added a Gradle Loom configuration intended to build and remap the Fabric mod for Minecraft 1.21.11.
+- Removed precompiled class files from the source archive; build classes from source using Gradle.
+- Kept display behavior client-side and preserved the server's actual inventory and slot order.
+- This release has not yet been verified in-game.
