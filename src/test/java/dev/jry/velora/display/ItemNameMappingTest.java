@@ -39,6 +39,19 @@ public class ItemNameMappingTest {
 		}
 	}
 
+
+	@Test
+	public void reversesDisplayedInventoryNumberToServerNumberByItemIdentity() {
+		assertEquals(1, ItemNameMapping.serverNumberForDisplayedName(ITEM_2, "5",
+				ITEM_1, ITEM_2, DisplayPattern.PATTERN_A).orElseThrow());
+		assertEquals(2, ItemNameMapping.serverNumberForDisplayedName(ITEM_2, "6",
+				ITEM_1, ITEM_2, DisplayPattern.PATTERN_A).orElseThrow());
+		assertEquals(1, ItemNameMapping.serverNumberForDisplayedName(ITEM_1, "1",
+				ITEM_1, ITEM_2, DisplayPattern.PATTERN_A).orElseThrow());
+		assertFalse(ItemNameMapping.serverNumberForDisplayedName("minecraft:diamond", "6",
+				ITEM_1, ITEM_2, DisplayPattern.PATTERN_A).isPresent());
+	}
+
 	@Test
 	public void reversesHigherPatternForDropperOneToFiveAndTwoToSix() {
 		assertEquals(0, ItemNameMapping.dropperDestination(ITEM_2, "1", 4,
