@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.jry.velora.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "HandledScreenMixin",
+    "InGameHudMixin",
+    "ItemModelManagerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

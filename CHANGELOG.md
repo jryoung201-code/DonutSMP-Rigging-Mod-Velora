@@ -1,7 +1,11 @@
 # Changelog
 
 ## 1.1.2
-- Added a Gradle Loom configuration intended to build and remap the Fabric mod for Minecraft 1.21.11.
-- Removed precompiled class files from the source archive; build classes from source using Gradle.
-- Kept display behavior client-side and preserved the server's actual inventory and slot order.
-- This release has not yet been verified in-game.
+
+- Keep vanilla display names and original slot order for the nine contents of a vanilla dropper.
+- Continue applying the configured local name pattern to eligible player inventory and hotbar slots.
+- No item stacks, server inventory data, packets, or slot positions are modified.
+
+## 1.1.0
+
+- Imported source project and existing local visual customization features.
