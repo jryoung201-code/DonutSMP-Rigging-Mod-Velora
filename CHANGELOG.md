@@ -2,8 +2,9 @@
 
 ## 1.1.9-pre-3
 
-- Fix the Dropper vacancy direction: use the mapped number shown by Velora, not the underlying server-side number. Example: server number 2 displayed as 6 moves the visual vacancy to the sixth slot.
-- Validate the item-identity mapping and visual slot permutation with the existing regression tests.
+- Keep the actual server-side item number visible in the Dropper: a book named "2" displays as 2, not 6.
+- Align the visual vacancy with that actual number, so server number 2 makes the second slot appear empty.
+- Keep the change client-side only; real server inventory and transactions are untouched.
 - Attach the compiled mod JAR to the GitHub prerelease when the `v1.1.9-pre-2` tag is pushed.
 
 ## 1.1.8f
