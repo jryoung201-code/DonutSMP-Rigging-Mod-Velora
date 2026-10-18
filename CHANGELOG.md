@@ -1,8 +1,8 @@
 # Changelog
 
-## 1.1.9-pre-2
+## 1.1.9-pre-3
 
-- Continue the prerelease with the latest correction to use the displayed inventory number when calculating the Dropper's visual vacancy.
+- Fix the Dropper vacancy direction: use the mapped number shown by Velora, not the underlying server-side number. Example: server number 2 displayed as 6 moves the visual vacancy to the sixth slot.
 - Validate the item-identity mapping and visual slot permutation with the existing regression tests.
 - Attach the compiled mod JAR to the GitHub prerelease when the `v1.1.9-pre-2` tag is pushed.
 
