@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.8
+
+- Visually reposition numbered items in Dropper and Dispenser 3x3 layouts, allowing the vacant slot to appear at the corresponding mapped position.
+- Offset only item icons and stack-count overlays; real slot contents, indices, hit targets, clicks, and server transfers remain unchanged.
+- Resolve duplicate mapped destinations deterministically in slot order, then place remaining items and empty slots into unclaimed positions.
+
 ## 1.1.6
 
 - Add configurable, local-only visual item swaps with source/display item selection, per-mapping enable controls, pagination, and reset support.

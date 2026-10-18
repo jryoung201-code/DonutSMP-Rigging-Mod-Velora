@@ -1,6 +1,7 @@
 package dev.jry.velora.display;
 
 import dev.jry.velora.config.DisplayPattern;
+import dev.jry.velora.config.DisplayMode;
 import dev.jry.velora.config.VeloraConfig;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.component.DataComponentTypes;
@@ -14,6 +15,7 @@ import net.minecraft.util.Identifier;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Arrays;
 
 /**
  * The heart of Velora's client-side rendering system.
@@ -67,6 +69,72 @@ public final class DisplayResolver {
 			case ITEM_NAMES -> resolveItemName(config, stack, position);
 			case MAPS -> resolveMap(config, stack, position);
 		};
+	}
+
+	/** Returns this container slot's visual destination when its item-number layout is valid. */
+	public static OptionalInt visualContainerPosition(HandledScreen<?> screen, Slot requestedSlot) {
+		if (!(screen.getScreenHandler() instanceof net.minecraft.screen.Generic3x3ContainerScreenHandler)
+				|| requestedSlot == null || requestedSlot.id < 0 || requestedSlot.id >= DisplayPattern.SLOT_COUNT
+				|| VeloraConfig.get().mode != DisplayMode.ITEM_NAMES) {
+			return OptionalInt.empty();
+		}
+
+		Slot[] containerSlots = new Slot[DisplayPattern.SLOT_COUNT];
+		for (Slot slot : screen.getScreenHandler().slots) {
+			if (slot.id >= 0 && slot.id < containerSlots.length) {
+				containerSlots[slot.id] = slot;
+			}
+		}
+		if (Arrays.stream(containerSlots).anyMatch(slot -> slot == null)) {
+			return OptionalInt.empty();
+		}
+
+		boolean[] destinationsUsed = new boolean[DisplayPattern.SLOT_COUNT];
+		int[] destinations = new int[DisplayPattern.SLOT_COUNT];
+		Arrays.fill(destinations, -1);
+		for (int source = 0; source < containerSlots.length; source++) {
+			Slot slot = containerSlots[source];
+			if (!slot.hasStack()) {
+				continue;
+			}
+
+			OptionalInt mappedPosition = resolve(slot.getStack(), source)
+					.map(display -> display.number() - 1)
+					.filter(number -> number >= 0 && number < DisplayPattern.SLOT_COUNT)
+					.map(OptionalInt::of)
+					.orElseGet(OptionalInt::empty);
+			if (mappedPosition.isPresent() && !destinationsUsed[mappedPosition.getAsInt()]) {
+				destinations[source] = mappedPosition.getAsInt();
+				destinationsUsed[mappedPosition.getAsInt()] = true;
+			}
+		}
+
+		for (int source = 0; source < containerSlots.length; source++) {
+			if (containerSlots[source].hasStack() && destinations[source] < 0) {
+				destinations[source] = firstAvailableDestination(destinationsUsed, source);
+			}
+		}
+		for (int source = 0; source < containerSlots.length; source++) {
+			if (!containerSlots[source].hasStack()) {
+				destinations[source] = firstAvailableDestination(destinationsUsed, source);
+			}
+		}
+
+		return OptionalInt.of(destinations[requestedSlot.id]);
+	}
+
+	private static int firstAvailableDestination(boolean[] destinationsUsed, int preferred) {
+		if (!destinationsUsed[preferred]) {
+			destinationsUsed[preferred] = true;
+			return preferred;
+		}
+		for (int destination = 0; destination < destinationsUsed.length; destination++) {
+			if (!destinationsUsed[destination]) {
+				destinationsUsed[destination] = true;
+				return destination;
+			}
+		}
+		return preferred;
 	}
 
 	/** Returns the selected LOSE item's model id for WIN/LOSE stacks when the visual toggle is on. */
