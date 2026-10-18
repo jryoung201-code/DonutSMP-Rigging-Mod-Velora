@@ -134,16 +134,15 @@ public final class DisplayResolver {
 				String itemId = Registries.ITEM.getId(inventoryStack.getItem()).toString();
 				String serverName = inventoryStack.get(DataComponentTypes.CUSTOM_NAME) == null
 						? null : inventoryStack.get(DataComponentTypes.CUSTOM_NAME).getString();
-				// Convert the actual server-side number to Velora's configured display number.
-				// Example: server name "2" on Item 2 maps to displayed number 6 in Pattern A.
-				OptionalInt displayedNumber = ItemNameMapping.mappedNumber(itemId, serverName,
-						config.item1, config.item2, config.pattern);
-				if (displayedNumber.isEmpty()) {
+				// The Dropper vacancy follows the server's actual item number.
+				// Example: a book named "2" makes the second visual slot appear empty,
+				// even if the configured inventory display pattern would show it as 6.
+				OptionalInt serverNumber = ItemNameMapping.serverNumberForDisplayedName(itemId, serverName,
+						config.item1, config.item2, DisplayPattern.NORMAL);
+				if (serverNumber.isEmpty()) {
 					continue;
 				}
-				// The vacancy follows the displayed number, not the underlying server number.
-				// Displayed 6 means the sixth visual slot (zero-based index 5).
-				int targetSlot = displayedNumber.getAsInt() - 1;
+				int targetSlot = serverNumber.getAsInt() - 1;
 				if (targetSlot >= 0 && targetSlot < containerSlots.length
 						&& occupied[targetSlot] && targetSlot != emptySource) {
 					int[] requestedDestinations = new int[DisplayPattern.SLOT_COUNT];
@@ -198,11 +197,13 @@ public final class DisplayResolver {
 		String realName = stack.get(DataComponentTypes.CUSTOM_NAME) == null
 				? null
 				: stack.get(DataComponentTypes.CUSTOM_NAME).getString().trim();
-		OptionalInt number = ItemNameMapping.mappedNumber(itemId, realName, config.item1, config.item2, config.pattern);
-		if (number.isEmpty()) {
+		if (realName == null || !realName.matches("[1-9]")) {
 			return Optional.empty();
 		}
-		return Optional.of(new SlotDisplay(String.valueOf(number.getAsInt()), number.getAsInt(), null));
+		// Preserve the actual server-side number in the Dropper display.
+		// The pattern can style player inventory labels, but must not turn a real "2" into "6" here.
+		int number = Integer.parseInt(realName);
+		return Optional.of(new SlotDisplay(String.valueOf(number), number, null));
 	}
 
 	private static Optional<SlotDisplay> resolveMap(VeloraConfig config, ItemStack stack, int position) {
