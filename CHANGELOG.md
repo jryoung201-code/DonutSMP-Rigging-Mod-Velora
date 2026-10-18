@@ -2,7 +2,8 @@
 
 ## 1.1.9-pre-4
 
-- Package the latest ITEM1/ITEM2 pattern-driven Dropper display and visual-vacancy mapping under prerelease version 1.1.9-pre-4.
+- Use the configured ITEM1/ITEM2 patterns for Dropper item labels and visual-vacancy mapping.
+- Make Dropper hover tooltips follow the item's visual destination, so a moved item shows the number for the slot it is displayed in.
 - Keep the change client-side only; real server inventory and transactions are untouched.
 
 ## 1.1.9-pre-3
