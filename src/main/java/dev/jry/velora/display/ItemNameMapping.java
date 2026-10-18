@@ -14,18 +14,18 @@ public final class ItemNameMapping {
 		if (itemId == null || customName == null || pattern == null) {
 			return OptionalInt.empty();
 		}
-	String name = customName.trim();
-	if (!name.matches("[1-9]")) {
+		String name = customName.trim();
+		if (!name.matches("[1-9]")) {
+			return OptionalInt.empty();
+		}
+		int namePosition = Integer.parseInt(name) - 1;
+		if (itemId.equals(item1Id)) {
+			return OptionalInt.of(pattern.lowerNumber(namePosition));
+		}
+		if (itemId.equals(item2Id)) {
+			return OptionalInt.of(pattern.higherNumber(namePosition));
+		}
 		return OptionalInt.empty();
-	}
-	int namePosition = Integer.parseInt(name) - 1;
-	if (itemId.equals(item1Id)) {
-		return OptionalInt.of(pattern.lowerNumber(namePosition));
-	}
-	if (itemId.equals(item2Id)) {
-		return OptionalInt.of(pattern.higherNumber(namePosition));
-	}
-	return OptionalInt.empty();
 	}
 
 	/** Resolves a numbered item's destination, keeping unconfigured items in their real position. */
@@ -36,14 +36,15 @@ public final class ItemNameMapping {
 	}
 
 	/**
-	 * Returns the source-number slot for an item currently at its configured displayed-number slot.
-	 * For server number n mapped to displayed number d, the container move is d-1 -> n-1.
+	 * Returns the target slot based on the item's identity and server-side number, not its current slot.
+	 * For server number n mapped to displayed number d, the visual destination is n-1 wherever
+	 * the matching item currently resides in the nine-slot container.
 	 */
-	public static OptionalInt dropperDestination(String itemId, String customName, int displayedSlot,
+	public static OptionalInt dropperDestination(String itemId, String customName, int currentSlot,
 			String item1Id, String item2Id, DisplayPattern pattern) {
 		OptionalInt serverNumber = serverNumber(customName);
 		OptionalInt displayedNumber = mappedNumber(itemId, customName, item1Id, item2Id, pattern);
-		if (serverNumber.isEmpty() || displayedNumber.isEmpty() || displayedNumber.getAsInt() - 1 != displayedSlot) {
+		if (serverNumber.isEmpty() || displayedNumber.isEmpty()) {
 			return OptionalInt.empty();
 		}
 		return OptionalInt.of(serverNumber.getAsInt() - 1);
