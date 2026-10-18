@@ -52,6 +52,17 @@ public class ItemNameMappingTest {
 				ITEM_1, ITEM_2, DisplayPattern.PATTERN_A).isPresent());
 	}
 
+
+	@Test
+	public void vacancyUsesDisplayedNumberRatherThanServerNumber() {
+		// Server number 2 maps to displayed number 6 for Item 2 in Pattern A.
+		int serverNumber = 2;
+		int displayedNumber = ItemNameMapping.mappedNumber(ITEM_2, Integer.toString(serverNumber),
+				ITEM_1, ITEM_2, DisplayPattern.PATTERN_A).orElseThrow();
+		assertEquals(6, displayedNumber);
+		assertEquals(5, displayedNumber - 1); // sixth visual slot, zero-based
+	}
+
 	@Test
 	public void reversesHigherPatternForDropperOneToFiveAndTwoToSix() {
 		assertEquals(0, ItemNameMapping.dropperDestination(ITEM_2, "1", 4,
