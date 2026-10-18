@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.8c
+
+- Resolve Item Names mappings by the configured Item 1 and Item 2 registry identities for all inventory locations.
+- Reuse the same identity-based mapping rule for container destinations, with unconfigured item types retaining their source position.
+- Add unit coverage for Paper and Book mappings across different source slots.
+
 ## 1.1.8b
 
 - Resolve one complete, deterministic permutation for all nine Dropper/Dispenser slots, including every empty slot.

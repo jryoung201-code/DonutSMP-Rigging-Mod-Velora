@@ -112,31 +112,37 @@ public final class DisplayResolver {
 			return null;
 		}
 
-		boolean[] destinationsUsed = new boolean[DisplayPattern.SLOT_COUNT];
-		int[] destinations = new int[DisplayPattern.SLOT_COUNT];
-		Arrays.fill(destinations, -1);
+	boolean[] destinationsUsed = new boolean[DisplayPattern.SLOT_COUNT];
+	int[] destinations = new int[DisplayPattern.SLOT_COUNT];
+	boolean[] mappedSources = new boolean[DisplayPattern.SLOT_COUNT];
 		for (int source = 0; source < containerSlots.length; source++) {
 			Slot slot = containerSlots[source];
 			if (!slot.hasStack()) {
 				continue;
 			}
 
-			OptionalInt mappedPosition = resolve(slot.getStack(), source)
-					.map(display -> display.number() - 1)
-					.filter(number -> number >= 0 && number < DisplayPattern.SLOT_COUNT)
-					.map(OptionalInt::of)
-					.orElseGet(OptionalInt::empty);
-			if (mappedPosition.isPresent() && !destinationsUsed[mappedPosition.getAsInt()]) {
-				destinations[source] = mappedPosition.getAsInt();
-				destinationsUsed[mappedPosition.getAsInt()] = true;
+			Optional<SlotDisplay> display = resolve(slot.getStack(), source);
+			if (display.isPresent()) {
+				int destination = display.get().number() - 1;
+				if (destination < 0 || destination >= DisplayPattern.SLOT_COUNT || destinationsUsed[destination]) {
+					return null;
+				}
+				destinations[source] = destination;
+				mappedSources[source] = true;
+				destinationsUsed[destination] = true;
 			}
 		}
 
 		for (int source = 0; source < containerSlots.length; source++) {
-			if (containerSlots[source].hasStack() && destinations[source] < 0) {
-				destinations[source] = firstAvailableDestination(destinationsUsed, source);
+			if (containerSlots[source].hasStack() && !mappedSources[source]) {
+				if (destinationsUsed[source]) {
+					return null;
+				}
+				destinations[source] = source;
+				destinationsUsed[source] = true;
 			}
 		}
+
 		for (int source = 0; source < containerSlots.length; source++) {
 			if (!containerSlots[source].hasStack()) {
 				destinations[source] = firstAvailableDestination(destinationsUsed, source);
@@ -157,7 +163,7 @@ public final class DisplayResolver {
 				return destination;
 			}
 		}
-		return preferred;
+		throw new IllegalStateException("No visual slot remains for an empty source slot");
 	}
 
 	/** Returns the selected LOSE item's model id for WIN/LOSE stacks when the visual toggle is on. */
@@ -197,24 +203,14 @@ public final class DisplayResolver {
 
 	private static Optional<SlotDisplay> resolveItemName(VeloraConfig config, ItemStack stack, int position) {
 		String itemId = Registries.ITEM.getId(stack.getItem()).toString();
-		DisplayPattern pattern = config.pattern;
 		String realName = stack.get(DataComponentTypes.CUSTOM_NAME) == null
 				? null
 				: stack.get(DataComponentTypes.CUSTOM_NAME).getString().trim();
-		if (realName == null || !realName.matches("[1-9]")) {
+		OptionalInt number = ItemNameMapping.mappedNumber(itemId, realName, config.item1, config.item2, config.pattern);
+		if (number.isEmpty()) {
 			return Optional.empty();
 		}
-		int namePosition = Integer.parseInt(realName) - 1;
-
-		int number;
-		if (itemId.equals(config.item1)) {
-			number = pattern.lowerNumber(namePosition);
-		} else if (itemId.equals(config.item2)) {
-			number = pattern.higherNumber(namePosition);
-		} else {
-			return Optional.empty();
-		}
-		return Optional.of(new SlotDisplay(String.valueOf(number), number, null));
+		return Optional.of(new SlotDisplay(String.valueOf(number.getAsInt()), number.getAsInt(), null));
 	}
 
 	private static Optional<SlotDisplay> resolveMap(VeloraConfig config, ItemStack stack, int position) {
