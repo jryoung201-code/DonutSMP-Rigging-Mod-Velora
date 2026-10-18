@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.9-pre-4
+
+- Package the latest ITEM1/ITEM2 pattern-driven Dropper display and visual-vacancy mapping under prerelease version 1.1.9-pre-4.
+- Keep the change client-side only; real server inventory and transactions are untouched.
+
 ## 1.1.9-pre-3
 
 - Resolve the displayed number from the configured ITEM1/ITEM2 identity and selected pattern.
