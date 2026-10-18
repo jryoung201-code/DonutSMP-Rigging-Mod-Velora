@@ -12,7 +12,6 @@ import net.minecraft.registry.Registries;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Identifier;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -55,15 +54,14 @@ public final class DisplayResolver {
 			return Optional.empty();
 		}
 
-		// For the 3x3 container, the tooltip must follow the slot's visual destination,
-		// not the item's original custom name. Otherwise an item moved by the pattern can
-		// render in slot 2 while its tooltip still says 6.
+		// In a 3x3 container, never swap item positions to reflect a display pattern.
+		// Keep the server's numbered item in its original slot and show its original number
+		// in the tooltip (e.g. show "2", not the pattern-mapped "6").
 		if (screen.getScreenHandler() instanceof net.minecraft.screen.Generic3x3ContainerScreenHandler
 				&& VeloraConfig.get().mode == DisplayMode.ITEM_NAMES) {
-			OptionalInt visualPosition = visualContainerPosition(screen, slot);
-			if (visualPosition.isPresent()) {
-				int visualNumber = visualPosition.getAsInt() + 1;
-				return Optional.of(new SlotDisplay(String.valueOf(visualNumber), visualNumber, null));
+			Optional<SlotDisplay> containerDisplay = resolveContainerItemName(VeloraConfig.get(), slot.getStack());
+			if (containerDisplay.isPresent()) {
+				return containerDisplay;
 			}
 		}
 		return resolve(slot.getStack(), position.getAsInt());
@@ -82,89 +80,17 @@ public final class DisplayResolver {
 		};
 	}
 
-	/** Returns this container slot's visual destination when its item-number layout is valid. */
+	/**
+	 * Dropper/Dispenser items are intentionally not visually repositioned.
+	 * The stack remains drawn and hit-tested at its real client slot.
+	 */
 	public static OptionalInt visualContainerPosition(HandledScreen<?> screen, Slot requestedSlot) {
-		if (requestedSlot == null || requestedSlot.id < 0 || requestedSlot.id >= DisplayPattern.SLOT_COUNT) {
-			return OptionalInt.empty();
-		}
-		int[] destinations = visualContainerDestinations(screen);
-		return destinations == null ? OptionalInt.empty() : OptionalInt.of(destinations[requestedSlot.id]);
+		return OptionalInt.empty();
 	}
 
-	/** Resolves a slot found at a displayed position back to the source slot it represents. */
+	/** No visual slot remapping is active, so vanilla hit-testing uses the real slot. */
 	public static Optional<Slot> visualContainerSourceSlot(HandledScreen<?> screen, Slot displayedSlot) {
-		if (displayedSlot == null || displayedSlot.id < 0 || displayedSlot.id >= DisplayPattern.SLOT_COUNT) {
-			return Optional.empty();
-		}
-		int[] destinations = visualContainerDestinations(screen);
-		if (destinations == null) {
-			return Optional.empty();
-		}
-		for (int source = 0; source < destinations.length; source++) {
-			if (destinations[source] == displayedSlot.id) {
-				return Optional.of(screen.getScreenHandler().slots.get(source));
-			}
-		}
 		return Optional.empty();
-	}
-
-	private static int[] visualContainerDestinations(HandledScreen<?> screen) {
-		if (!(screen.getScreenHandler() instanceof net.minecraft.screen.Generic3x3ContainerScreenHandler)
-				|| VeloraConfig.get().mode != DisplayMode.ITEM_NAMES) {
-			return null;
-		}
-		Slot[] containerSlots = new Slot[DisplayPattern.SLOT_COUNT];
-		for (Slot slot : screen.getScreenHandler().slots) {
-			if (slot.id >= 0 && slot.id < containerSlots.length) {
-				containerSlots[slot.id] = slot;
-			}
-		}
-		if (Arrays.stream(containerSlots).anyMatch(slot -> slot == null)) {
-			return null;
-		}
-
-		boolean[] occupied = new boolean[DisplayPattern.SLOT_COUNT];
-		int emptySource = -1;
-		for (int source = 0; source < containerSlots.length; source++) {
-			occupied[source] = containerSlots[source].hasStack();
-			if (!occupied[source] && emptySource < 0) {
-				emptySource = source;
-			}
-		}
-
-		// The number comes from the configured item in the player's inventory/hotbar,
-		// not from the contents or slot index of the Dropper itself.
-		if (emptySource >= 0) {
-			VeloraConfig config = VeloraConfig.get();
-			int playerStart = DisplayPattern.SLOT_COUNT;
-			for (int i = playerStart; i < screen.getScreenHandler().slots.size(); i++) {
-				ItemStack inventoryStack = screen.getScreenHandler().slots.get(i).getStack();
-				if (inventoryStack.isEmpty()) {
-					continue;
-				}
-				String itemId = Registries.ITEM.getId(inventoryStack.getItem()).toString();
-				String serverName = inventoryStack.get(DataComponentTypes.CUSTOM_NAME) == null
-						? null : inventoryStack.get(DataComponentTypes.CUSTOM_NAME).getString();
-				// Use the configured pattern for the item's identity: ITEM1 uses the lower
-				// pattern, ITEM2 uses the higher pattern. The vacancy follows that displayed number.
-				OptionalInt displayedNumber = ItemNameMapping.mappedNumber(itemId, serverName,
-						config.item1, config.item2, config.pattern);
-				if (displayedNumber.isEmpty()) {
-					continue;
-				}
-				int targetSlot = displayedNumber.getAsInt() - 1;
-				if (targetSlot >= 0 && targetSlot < containerSlots.length
-						&& occupied[targetSlot] && targetSlot != emptySource) {
-					int[] requestedDestinations = new int[DisplayPattern.SLOT_COUNT];
-					Arrays.fill(requestedDestinations, -1);
-					requestedDestinations[targetSlot] = emptySource;
-					return VisualSlotMapping.destinations(occupied, requestedDestinations).orElse(null);
-				}
-				// Only one active inventory number controls the visual vacancy at a time.
-				break;
-			}
-		}
-		return null;
 	}
 
 	/** Returns the selected LOSE item's model id for WIN/LOSE stacks when the visual toggle is on. */
@@ -200,6 +126,24 @@ public final class DisplayResolver {
 		String sourceId = Registries.ITEM.getId(originalStack.getItem()).toString();
 		return VeloraConfig.get().visualDisplayItemId(sourceId)
 				.map(displayId -> new ItemStack(Registries.ITEM.get(displayId)));
+	}
+
+	private static Optional<SlotDisplay> resolveContainerItemName(VeloraConfig config, ItemStack stack) {
+		if (stack == null || stack.isEmpty()) {
+			return Optional.empty();
+		}
+		String itemId = Registries.ITEM.getId(stack.getItem()).toString();
+		if (!itemId.equals(config.item1) && !itemId.equals(config.item2)) {
+			return Optional.empty();
+		}
+		String realName = stack.get(DataComponentTypes.CUSTOM_NAME) == null
+				? null
+				: stack.get(DataComponentTypes.CUSTOM_NAME).getString().trim();
+		if (realName == null || !realName.matches("[1-9]")) {
+			return Optional.empty();
+		}
+		int number = Integer.parseInt(realName);
+		return Optional.of(new SlotDisplay(realName, number, null));
 	}
 
 	private static Optional<SlotDisplay> resolveItemName(VeloraConfig config, ItemStack stack, int position) {
