@@ -132,17 +132,18 @@ public final class DisplayResolver {
 					continue;
 				}
 				String itemId = Registries.ITEM.getId(inventoryStack.getItem()).toString();
-				String displayedName = inventoryStack.get(DataComponentTypes.CUSTOM_NAME) == null
+				String serverName = inventoryStack.get(DataComponentTypes.CUSTOM_NAME) == null
 						? null : inventoryStack.get(DataComponentTypes.CUSTOM_NAME).getString();
-				OptionalInt serverNumber = ItemNameMapping.serverNumberForDisplayedName(itemId,
-						displayedName, config.item1, config.item2, config.pattern);
-				if (serverNumber.isEmpty()) {
+				// Convert the actual server-side number to Velora's configured display number.
+				// Example: server name "2" on Item 2 maps to displayed number 6 in Pattern A.
+				OptionalInt displayedNumber = ItemNameMapping.mappedNumber(itemId, serverName,
+						config.item1, config.item2, config.pattern);
+				if (displayedNumber.isEmpty()) {
 					continue;
 				}
-				// The server-side item number determines the visual vacancy. If the server
-				// sends item 2 and Velora displays it as 6, the vacancy belongs at slot 2
-				// (zero-based index 1), not at the displayed-number slot 6.
-				int targetSlot = serverNumber.getAsInt() - 1;
+				// The vacancy follows the displayed number, not the underlying server number.
+				// Displayed 6 means the sixth visual slot (zero-based index 5).
+				int targetSlot = displayedNumber.getAsInt() - 1;
 				if (targetSlot >= 0 && targetSlot < containerSlots.length
 						&& occupied[targetSlot] && targetSlot != emptySource) {
 					int[] requestedDestinations = new int[DisplayPattern.SLOT_COUNT];
