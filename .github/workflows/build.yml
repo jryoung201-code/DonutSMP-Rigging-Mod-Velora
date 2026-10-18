@@ -55,4 +55,5 @@ jobs:
         with:
           name: Velora ${{ github.ref_name }}
           generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-pre') }}
           files: release/*.jar

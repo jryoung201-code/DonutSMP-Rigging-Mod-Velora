@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.9-pre
+
+- Prepare a prerelease build with the current visual item mapping and Dropper slot layout fixes.
+- Attach the compiled mod JAR to the GitHub prerelease when the `v1.1.9-pre` tag is pushed.
+
 ## 1.1.8f
 
 - Apply the existing pattern by identity: for item number `n`, calculate displayed number `d` from the configured Item 1/Item 2 pattern array; in a Dropper, the item at slot `d - 1` is drawn at slot `n - 1`.
