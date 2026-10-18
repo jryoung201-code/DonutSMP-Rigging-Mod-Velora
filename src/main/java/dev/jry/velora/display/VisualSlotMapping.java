@@ -13,7 +13,7 @@ public final class VisualSlotMapping {
 	/**
 	 * @param occupied whether each real slot contains an item
 	 * @param requestedDestinations zero-based destination for each mapped item, or -1 when unmapped
-	 * @return source-to-destination positions, or empty when configured and fixed slots conflict
+	 * @return source-to-destination positions, or empty for invalid/duplicate requested destinations
 	 */
 	public static Optional<int[]> destinations(boolean[] occupied, int[] requestedDestinations) {
 		int count = DisplayPattern.SLOT_COUNT;
@@ -27,6 +27,7 @@ public final class VisualSlotMapping {
 		int[] destinations = new int[count];
 		Arrays.fill(destinations, -1);
 
+		// First reserve every destination explicitly requested by an identity/name mapping.
 		for (int source = 0; source < count; source++) {
 			if (!occupied[source] || requestedDestinations[source] == -1) {
 				continue;
@@ -40,25 +41,37 @@ public final class VisualSlotMapping {
 			destinationsUsed[destination] = true;
 		}
 
+		// Keep unmapped occupied items in their own slot where possible. If a mapped item
+		// needs that destination, move the displaced item into the vacated source position.
 		for (int source = 0; source < count; source++) {
-			if (occupied[source] && !mappedSources[source]) {
-				if (destinationsUsed[source]) {
-					return Optional.empty();
-				}
-				destinations[source] = source;
-				destinationsUsed[source] = true;
+			if (!occupied[source] || mappedSources[source]) {
+				continue;
 			}
+			int destination = !destinationsUsed[source]
+					? source
+					: findVacatedMappedSource(destinations, mappedSources, destinationsUsed);
+			if (destination < 0) {
+				destination = firstAvailableDestination(destinationsUsed);
+			}
+			if (destination < 0) {
+				return Optional.empty();
+			}
+			destinations[source] = destination;
+			destinationsUsed[destination] = true;
 		}
 
+		// Empty source slots fill the remaining destinations. Prefer their own position,
+		// then the first free destination, so the mapping stays a complete permutation.
 		for (int source = 0; source < count; source++) {
 			if (occupied[source]) {
 				continue;
 			}
-			int vacatedSource = findVacatedMappedSource(destinations, mappedSources, destinationsUsed);
-			destinations[source] = vacatedSource >= 0
-					? vacatedSource
-					: firstAvailableDestination(destinationsUsed, source);
-			destinationsUsed[destinations[source]] = true;
+			int destination = !destinationsUsed[source] ? source : firstAvailableDestination(destinationsUsed);
+			if (destination < 0) {
+				return Optional.empty();
+			}
+			destinations[source] = destination;
+			destinationsUsed[destination] = true;
 		}
 
 		return Optional.of(destinations);
@@ -74,15 +87,12 @@ public final class VisualSlotMapping {
 		return -1;
 	}
 
-	private static int firstAvailableDestination(boolean[] destinationsUsed, int preferred) {
-		if (!destinationsUsed[preferred]) {
-			return preferred;
-		}
+	private static int firstAvailableDestination(boolean[] destinationsUsed) {
 		for (int destination = 0; destination < destinationsUsed.length; destination++) {
 			if (!destinationsUsed[destination]) {
 				return destination;
 			}
 		}
-		throw new IllegalStateException("No visual slot remains for an empty source slot");
+		return -1;
 	}
 }
