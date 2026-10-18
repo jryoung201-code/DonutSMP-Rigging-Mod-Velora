@@ -34,4 +34,29 @@ public final class ItemNameMapping {
 		OptionalInt mappedNumber = mappedNumber(itemId, customName, item1Id, item2Id, pattern);
 		return mappedNumber.isPresent() ? mappedNumber.getAsInt() - 1 : sourcePosition;
 	}
+
+	/**
+	 * Returns the source-number slot for an item currently at its configured displayed-number slot.
+	 * For server number n mapped to displayed number d, the container move is d-1 -> n-1.
+	 */
+	public static OptionalInt dropperDestination(String itemId, String customName, int displayedSlot,
+			String item1Id, String item2Id, DisplayPattern pattern) {
+		OptionalInt serverNumber = serverNumber(customName);
+		OptionalInt displayedNumber = mappedNumber(itemId, customName, item1Id, item2Id, pattern);
+		if (serverNumber.isEmpty() || displayedNumber.isEmpty() || displayedNumber.getAsInt() - 1 != displayedSlot) {
+			return OptionalInt.empty();
+		}
+		return OptionalInt.of(serverNumber.getAsInt() - 1);
+	}
+
+	private static OptionalInt serverNumber(String customName) {
+		if (customName == null) {
+			return OptionalInt.empty();
+		}
+		String name = customName.trim();
+		if (!name.matches("[1-9]")) {
+			return OptionalInt.empty();
+		}
+		return OptionalInt.of(Integer.parseInt(name));
+	}
 }

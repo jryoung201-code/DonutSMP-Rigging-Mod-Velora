@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.8f
+
+- Apply the existing pattern by identity: for item number `n`, calculate displayed number `d` from the configured Item 1/Item 2 pattern array; in a Dropper, the item at slot `d - 1` is drawn at slot `n - 1`.
+- Assign the visual vacancy to the mapped source position that was vacated, rather than to an arbitrary next-open position.
+- Add regression coverage for the requested `1 → 5`, `2 → 6` examples and the remaining configured sequence.
+
 ## 1.1.8c
 
 - Resolve Item Names mappings by the configured Item 1 and Item 2 registry identities for all inventory locations.

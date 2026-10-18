@@ -5,6 +5,8 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ItemNameMappingTest {
 	private static final String ITEM_1 = "minecraft:paper";
@@ -26,6 +28,68 @@ public class ItemNameMappingTest {
 			assertEquals(4, ItemNameMapping.destination(ITEM_2, "5", sourceSlot,
 					ITEM_1, ITEM_2, DisplayPattern.PATTERN_A));
 		}
+	}
+
+	@Test
+	public void mapsPaperNumbersFiveThroughNineToDisplaySlotsZeroThroughFour() {
+		for (int serverNumber = 5; serverNumber <= 9; serverNumber++) {
+			int expectedPosition = serverNumber - 5;
+			assertEquals(expectedPosition, ItemNameMapping.destination(ITEM_1,
+					Integer.toString(serverNumber), 8, ITEM_1, ITEM_2, DisplayPattern.PATTERN_A));
+		}
+	}
+
+	@Test
+	public void reversesHigherPatternForDropperOneToFiveAndTwoToSix() {
+		assertEquals(0, ItemNameMapping.dropperDestination(ITEM_2, "1", 4,
+				ITEM_1, ITEM_2, DisplayPattern.PATTERN_A).orElseThrow());
+		assertEquals(1, ItemNameMapping.dropperDestination(ITEM_2, "2", 5,
+				ITEM_1, ITEM_2, DisplayPattern.PATTERN_A).orElseThrow());
+		assertFalse(ItemNameMapping.dropperDestination(ITEM_2, "1", 0,
+				ITEM_1, ITEM_2, DisplayPattern.PATTERN_A).isPresent());
+	}
+
+	@Test
+	public void followsTheConfiguredHigherPatternForAllBookNumbers() {
+		for (int serverNumber = 1; serverNumber <= 9; serverNumber++) {
+			int displayedNumber = DisplayPattern.PATTERN_A.higherNumber(serverNumber - 1);
+			int expectedDestination = serverNumber - 1;
+			int sourceSlot = displayedNumber - 1;
+			assertEquals(expectedDestination, ItemNameMapping.dropperDestination(ITEM_2,
+					Integer.toString(serverNumber), sourceSlot, ITEM_1, ITEM_2,
+					DisplayPattern.PATTERN_A).orElseThrow());
+		}
+	}
+
+	@Test
+	public void reversesLowerPatternForPaperIdentity() {
+		assertEquals(4, ItemNameMapping.dropperDestination(ITEM_1, "5", 0,
+				ITEM_1, ITEM_2, DisplayPattern.PATTERN_A).orElseThrow());
+	}
+
+	@Test
+	public void placesTheVacancyAtTheMappedItemsSourceSlot() {
+		boolean[] occupied = new boolean[9];
+		occupied[4] = true;
+		int[] requestedDestinations = new int[9];
+		java.util.Arrays.fill(requestedDestinations, -1);
+		requestedDestinations[4] = 0;
+
+		int[] destinations = VisualSlotMapping.destinations(occupied, requestedDestinations).orElseThrow();
+		assertEquals(0, destinations[4]);
+		assertEquals(4, destinations[0]);
+		assertArrayEquals(new int[]{4, 1, 2, 3, 0, 5, 6, 7, 8}, destinations);
+	}
+
+	@Test
+	public void keepsFullContainerSlotsStableWhenMappedTargetIsOccupied() {
+		boolean[] occupied = new boolean[9];
+		java.util.Arrays.fill(occupied, true);
+		int[] requestedDestinations = new int[9];
+		java.util.Arrays.fill(requestedDestinations, -1);
+		requestedDestinations[3] = 0;
+
+		assertFalse(VisualSlotMapping.destinations(occupied, requestedDestinations).isPresent());
 	}
 
 	@Test
