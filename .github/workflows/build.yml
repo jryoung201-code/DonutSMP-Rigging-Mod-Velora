@@ -6,6 +6,12 @@ on:
     tags: ["v*.*.*"]
   workflow_dispatch:
 
+# If several commits arrive close together, cancel the older run and keep only
+# the newest run for that branch or tag.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
