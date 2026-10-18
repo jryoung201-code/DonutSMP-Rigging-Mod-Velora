@@ -21,10 +21,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Build mod
         run: ./gradlew clean build --no-daemon
-      - name: Prepare mod JAR only
+      - name: Move current mod JAR into release
         shell: bash
         run: |
           mkdir -p release
+          rm -f release/velora-*.jar
           shopt -s nullglob
           mod_jars=()
           for jar in build/libs/velora-*.jar; do
@@ -38,9 +39,7 @@ jobs:
             exit 1
           fi
 
-          for jar in "${mod_jars[@]}"; do
-            cp "$jar" release/
-          done
+          mv "${mod_jars[0]}" release/
 
           ls -lh release/
       - name: Upload mod JAR artifact
