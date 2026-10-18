@@ -139,9 +139,10 @@ public final class DisplayResolver {
 				if (serverNumber.isEmpty()) {
 					continue;
 				}
-				// The visible number (e.g. 6) determines the vacancy position (zero-based 5).
-				// Do not use the reverse-mapped server number here; that caused 6 to target slot 1.
-				int targetSlot = Integer.parseInt(displayedName.trim()) - 1;
+				// The server-side item number determines the visual vacancy. If the server
+				// sends item 2 and Velora displays it as 6, the vacancy belongs at slot 2
+				// (zero-based index 1), not at the displayed-number slot 6.
+				int targetSlot = serverNumber.getAsInt() - 1;
 				if (targetSlot >= 0 && targetSlot < containerSlots.length
 						&& occupied[targetSlot] && targetSlot != emptySource) {
 					int[] requestedDestinations = new int[DisplayPattern.SLOT_COUNT];
