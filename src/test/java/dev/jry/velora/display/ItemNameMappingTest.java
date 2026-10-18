@@ -82,14 +82,16 @@ public class ItemNameMappingTest {
 	}
 
 	@Test
-	public void keepsFullContainerSlotsStableWhenMappedTargetIsOccupied() {
+	public void movesDisplacedFullContainerItemIntoVacatedSourceSlot() {
 		boolean[] occupied = new boolean[9];
 		java.util.Arrays.fill(occupied, true);
 		int[] requestedDestinations = new int[9];
 		java.util.Arrays.fill(requestedDestinations, -1);
 		requestedDestinations[3] = 0;
 
-		assertFalse(VisualSlotMapping.destinations(occupied, requestedDestinations).isPresent());
+		int[] destinations = VisualSlotMapping.destinations(occupied, requestedDestinations).orElseThrow();
+		assertArrayEquals(new int[]{3, 1, 2, 0, 4, 5, 6, 7, 8}, destinations);
+		assertEquals(9, java.util.Arrays.stream(destinations).distinct().count());
 	}
 
 	@Test
