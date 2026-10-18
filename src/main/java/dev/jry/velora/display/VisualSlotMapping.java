@@ -51,6 +51,10 @@ public final class VisualSlotMapping {
 					? source
 					: findVacatedMappedSource(destinations, mappedSources, destinationsUsed);
 			if (destination < 0) {
+				// A full container has no real vacancy to move into; avoid inventing one.
+				if (allOccupied(occupied)) {
+					return Optional.empty();
+				}
 				destination = firstAvailableDestination(destinationsUsed);
 			}
 			if (destination < 0) {
@@ -66,7 +70,9 @@ public final class VisualSlotMapping {
 			if (occupied[source]) {
 				continue;
 			}
-			int destination = !destinationsUsed[source] ? source : firstAvailableDestination(destinationsUsed);
+			int vacatedMappedSource = findVacatedMappedSource(destinations, mappedSources, destinationsUsed);
+			int destination = vacatedMappedSource >= 0 ? vacatedMappedSource
+					: (!destinationsUsed[source] ? source : firstAvailableDestination(destinationsUsed));
 			if (destination < 0) {
 				return Optional.empty();
 			}
@@ -85,6 +91,15 @@ public final class VisualSlotMapping {
 			}
 		}
 		return -1;
+	}
+
+	private static boolean allOccupied(boolean[] occupied) {
+		for (boolean value : occupied) {
+			if (!value) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private static int firstAvailableDestination(boolean[] destinationsUsed) {
