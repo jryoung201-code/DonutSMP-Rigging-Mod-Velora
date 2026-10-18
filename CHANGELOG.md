@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.9-pre-5
+
+- Package the latest Dropper visual-slot tooltip correction under prerelease version 1.1.9-pre-5.
+- Keep the configured ITEM1/ITEM2 pattern mapping and client-side-only behavior.
+
 ## 1.1.9-pre-4
 
 - Use the configured ITEM1/ITEM2 patterns for Dropper item labels and visual-vacancy mapping.
