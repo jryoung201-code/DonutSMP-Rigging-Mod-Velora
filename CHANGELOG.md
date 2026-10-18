@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.9-pre-6
+
+- Stop visually repositioning Dropper/Dispenser items based on ITEM1/ITEM2 patterns.
+- Keep each numbered item in its original slot and show its original number in the container tooltip (for example, "2" instead of the mapped "6").
+- Preserve configured ITEM1/ITEM2 pattern mapping outside the 3x3 container; no server inventory data is changed.
+
 ## 1.1.9-pre-5
 
 - Package the latest Dropper visual-slot tooltip correction under prerelease version 1.1.9-pre-5.
