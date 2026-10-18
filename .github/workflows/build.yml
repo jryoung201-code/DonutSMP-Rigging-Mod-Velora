@@ -25,8 +25,24 @@ jobs:
         shell: bash
         run: |
           mkdir -p release
-          find build/libs -maxdepth 1 -type f -name 'velora-*.jar' ! -name '*-sources.jar' -exec cp {} release/ \\;
-          test -n "$(find release -maxdepth 1 -type f -name '*.jar' -print -quit)"
+          shopt -s nullglob
+          mod_jars=()
+          for jar in build/libs/velora-*.jar; do
+            if [[ "$jar" != *"-sources.jar" ]]; then
+              mod_jars+=("$jar")
+            fi
+          done
+
+          if [ "${#mod_jars[@]}" -eq 0 ]; then
+            echo "No mod JAR found in build/libs."
+            exit 1
+          fi
+
+          for jar in "${mod_jars[@]}"; do
+            cp "$jar" release/
+          done
+
+          ls -lh release/
       - name: Upload mod JAR artifact
         uses: actions/upload-artifact@v4
         with:
