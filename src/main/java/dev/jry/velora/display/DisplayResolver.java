@@ -55,6 +55,17 @@ public final class DisplayResolver {
 			return Optional.empty();
 		}
 
+		// For the 3x3 container, the tooltip must follow the slot's visual destination,
+		// not the item's original custom name. Otherwise an item moved by the pattern can
+		// render in slot 2 while its tooltip still says 6.
+		if (screen.getScreenHandler() instanceof net.minecraft.screen.Generic3x3ContainerScreenHandler
+				&& VeloraConfig.get().mode == DisplayMode.ITEM_NAMES) {
+			OptionalInt visualPosition = visualContainerPosition(screen, slot);
+			if (visualPosition.isPresent()) {
+				int visualNumber = visualPosition.getAsInt() + 1;
+				return Optional.of(new SlotDisplay(String.valueOf(visualNumber), visualNumber, null));
+			}
+		}
 		return resolve(slot.getStack(), position.getAsInt());
 	}
 
