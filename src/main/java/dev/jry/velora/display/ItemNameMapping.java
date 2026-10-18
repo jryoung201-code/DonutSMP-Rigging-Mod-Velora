@@ -44,7 +44,8 @@ public final class ItemNameMapping {
 			String item1Id, String item2Id, DisplayPattern pattern) {
 		OptionalInt serverNumber = serverNumber(customName);
 		OptionalInt displayedNumber = mappedNumber(itemId, customName, item1Id, item2Id, pattern);
-		if (serverNumber.isEmpty() || displayedNumber.isEmpty()) {
+		if (serverNumber.isEmpty() || displayedNumber.isEmpty()
+				|| displayedNumber.getAsInt() - 1 != currentSlot) {
 			return OptionalInt.empty();
 		}
 		return OptionalInt.of(serverNumber.getAsInt() - 1);
