@@ -25,11 +25,11 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 /**
- * Render-only hooks into every container screen.
+ * Render and hit-test hooks into handled screens.
  *
- * <p>Both injections only change what is DRAWN. Neither touches slot contents, the screen
- * handler, click handling or packets, so clicking a slot still acts on the real server slot.
- * Which slots get restyled is decided by {@link DisplayResolver}.
+ * <p>The rendering wrappers offset only local drawing calls. The hit-test wrapper translates
+ * visual coordinates back to the corresponding real slot, allowing vanilla click/drag logic
+ * and packets to continue using original slot IDs and contents.
  */
 @Mixin(HandledScreen.class)
 public abstract class HandledScreenMixin<T extends ScreenHandler> extends Screen {
@@ -47,6 +47,16 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> extends Screen
 
 	protected HandledScreenMixin(Text title) {
 		super(title);
+	}
+
+	@WrapMethod(method = "getSlotAt(DD)Lnet/minecraft/screen/slot/Slot;")
+	private Slot velora$mapDisplayedSlotToSource(double x, double y, Operation<Slot> original) {
+		Slot displayedSlot = original.call(x, y);
+		if (displayedSlot == null) {
+			return null;
+		}
+		return DisplayResolver.visualContainerSourceSlot((HandledScreen<?>) (Object) this, displayedSlot)
+				.orElse(displayedSlot);
 	}
 
 	@WrapMethod(method = "drawSlot(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/screen/slot/Slot;II)V")
@@ -82,6 +92,17 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> extends Screen
 		SlotOffset offset = VELORA_SLOT_OFFSET.get();
 		original.call(context, renderPipeline, texture, x + (offset == null ? 0 : offset.x()),
 				y + (offset == null ? 0 : offset.y()), width, height);
+	}
+
+	@WrapOperation(
+			method = "drawSlot(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/screen/slot/Slot;II)V",
+			at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/DrawContext;fill(IIIII)V")
+	)
+	private void velora$offsetSlotHighlight(DrawContext context, int left, int top, int right, int bottom,
+			int color, Operation<Void> original) {
+		SlotOffset offset = VELORA_SLOT_OFFSET.get();
+		original.call(context, left + (offset == null ? 0 : offset.x()), top + (offset == null ? 0 : offset.y()),
+				right + (offset == null ? 0 : offset.x()), bottom + (offset == null ? 0 : offset.y()), color);
 	}
 
 	@WrapOperation(

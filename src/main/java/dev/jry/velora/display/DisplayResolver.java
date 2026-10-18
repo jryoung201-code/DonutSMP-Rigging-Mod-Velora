@@ -12,19 +12,19 @@ import net.minecraft.registry.Registries;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Identifier;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.Arrays;
 
 /**
  * The heart of Velora's client-side rendering system.
  *
  * <p>ACTUAL DATA (the real ItemStack, item id, map id, slot, server state) is only ever
  * READ here. DISPLAY DATA ({@link SlotDisplay}) is what comes out. The renderer draws that
- * on top of the normal slot, locally. Nothing is written back: no stack is copied into the
- * handler, no packet is built, and click handling is never involved, so a click on a slot
- * always acts on the real server slot.
+ * at its local destination. Nothing is written back: the handler retains its original slots,
+ * and visual hit tests are translated back to the real source slot before vanilla processes
+ * clicks and drags.
  *
  * <p>The stack is re-read on every call. Nothing is cached, so server inventory updates are
  * picked up on the next frame.
@@ -73,12 +73,35 @@ public final class DisplayResolver {
 
 	/** Returns this container slot's visual destination when its item-number layout is valid. */
 	public static OptionalInt visualContainerPosition(HandledScreen<?> screen, Slot requestedSlot) {
-		if (!(screen.getScreenHandler() instanceof net.minecraft.screen.Generic3x3ContainerScreenHandler)
-				|| requestedSlot == null || requestedSlot.id < 0 || requestedSlot.id >= DisplayPattern.SLOT_COUNT
-				|| VeloraConfig.get().mode != DisplayMode.ITEM_NAMES) {
+		if (requestedSlot == null || requestedSlot.id < 0 || requestedSlot.id >= DisplayPattern.SLOT_COUNT) {
 			return OptionalInt.empty();
 		}
+		int[] destinations = visualContainerDestinations(screen);
+		return destinations == null ? OptionalInt.empty() : OptionalInt.of(destinations[requestedSlot.id]);
+	}
 
+	/** Resolves a slot found at a displayed position back to the source slot it represents. */
+	public static Optional<Slot> visualContainerSourceSlot(HandledScreen<?> screen, Slot displayedSlot) {
+		if (displayedSlot == null || displayedSlot.id < 0 || displayedSlot.id >= DisplayPattern.SLOT_COUNT) {
+			return Optional.empty();
+		}
+		int[] destinations = visualContainerDestinations(screen);
+		if (destinations == null) {
+			return Optional.empty();
+		}
+		for (int source = 0; source < destinations.length; source++) {
+			if (destinations[source] == displayedSlot.id) {
+				return Optional.of(screen.getScreenHandler().slots.get(source));
+			}
+		}
+		return Optional.empty();
+	}
+
+	private static int[] visualContainerDestinations(HandledScreen<?> screen) {
+		if (!(screen.getScreenHandler() instanceof net.minecraft.screen.Generic3x3ContainerScreenHandler)
+				|| VeloraConfig.get().mode != DisplayMode.ITEM_NAMES) {
+			return null;
+		}
 		Slot[] containerSlots = new Slot[DisplayPattern.SLOT_COUNT];
 		for (Slot slot : screen.getScreenHandler().slots) {
 			if (slot.id >= 0 && slot.id < containerSlots.length) {
@@ -86,7 +109,7 @@ public final class DisplayResolver {
 			}
 		}
 		if (Arrays.stream(containerSlots).anyMatch(slot -> slot == null)) {
-			return OptionalInt.empty();
+			return null;
 		}
 
 		boolean[] destinationsUsed = new boolean[DisplayPattern.SLOT_COUNT];
@@ -120,7 +143,7 @@ public final class DisplayResolver {
 			}
 		}
 
-		return OptionalInt.of(destinations[requestedSlot.id]);
+		return destinations;
 	}
 
 	private static int firstAvailableDestination(boolean[] destinationsUsed, int preferred) {

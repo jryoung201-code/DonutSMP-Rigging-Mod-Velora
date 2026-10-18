@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.8b
+
+- Resolve one complete, deterministic permutation for all nine Dropper/Dispenser slots, including every empty slot.
+- Map hit-tested visual slots back to their real source slots so pickup, shift-click, drag, release, and tooltip selection follow the displayed item without modifying inventory data.
+- Keep duplicate destination handling stable: the earliest configured mapping wins, and remaining items/empty slots fill unclaimed destinations in slot order.
+
 ## 1.1.8
 
 - Visually reposition numbered items in Dropper and Dispenser 3x3 layouts, allowing the vacant slot to appear at the corresponding mapped position.
