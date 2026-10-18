@@ -28,6 +28,32 @@ public final class ItemNameMapping {
 		return OptionalInt.empty();
 	}
 
+
+	/**
+	 * Resolves a displayed inventory number back to its server-side number using the
+	 * selected item identity's pattern. When a pattern repeats a displayed number, the
+	 * first matching server number is used (e.g. Pattern A's higher-item "6" maps to 2).
+	 */
+	public static OptionalInt serverNumberForDisplayedName(String itemId, String displayedName,
+			String item1Id, String item2Id, DisplayPattern pattern) {
+		if (itemId == null || displayedName == null || pattern == null) {
+			return OptionalInt.empty();
+		}
+		String value = displayedName.trim();
+		if (!value.matches("[1-9]")) {
+			return OptionalInt.empty();
+		}
+		int displayedNumber = Integer.parseInt(value);
+		for (int serverNumber = 1; serverNumber <= DisplayPattern.SLOT_COUNT; serverNumber++) {
+			int mapped = itemId.equals(item1Id) ? pattern.lowerNumber(serverNumber - 1)
+					: itemId.equals(item2Id) ? pattern.higherNumber(serverNumber - 1) : -1;
+			if (mapped == displayedNumber) {
+				return OptionalInt.of(serverNumber);
+			}
+		}
+		return OptionalInt.empty();
+	}
+
 	/** Resolves a numbered item's destination, keeping unconfigured items in their real position. */
 	public static int destination(String itemId, String customName, int sourcePosition, String item1Id,
 			String item2Id, DisplayPattern pattern) {
