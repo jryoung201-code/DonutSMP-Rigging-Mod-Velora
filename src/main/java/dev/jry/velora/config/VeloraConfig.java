@@ -15,6 +15,11 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Persistent Velora settings, stored in {@code config/velora.json}.
@@ -43,6 +48,22 @@ public final class VeloraConfig {
 	public String winItem = DEFAULT_WIN_ITEM;
 	public String loseItem = DEFAULT_LOSE_ITEM;
 	public boolean winLoseEnabled = false;
+	public boolean visualItemSwapEnabled = false;
+	public List<VisualItemMapping> visualItemMappings = new ArrayList<>();
+
+	public static final class VisualItemMapping {
+		public String sourceItem;
+		public String displayItem;
+		public boolean enabled = true;
+
+		public VisualItemMapping() {
+		}
+
+		public VisualItemMapping(String sourceItem, String displayItem) {
+			this.sourceItem = sourceItem;
+			this.displayItem = displayItem;
+		}
+	}
 
 	public static VeloraConfig get() {
 		return instance;
@@ -121,6 +142,55 @@ public final class VeloraConfig {
 		return true;
 	}
 
+	public Optional<Identifier> visualDisplayItemId(String sourceItem) {
+		if (!visualItemSwapEnabled || sourceItem == null || visualItemMappings == null) {
+			return Optional.empty();
+		}
+		for (VisualItemMapping mapping : visualItemMappings) {
+			if (mapping != null && mapping.enabled && sourceItem.equals(mapping.sourceItem)) {
+				Identifier displayId = mapping.displayItem == null ? null : Identifier.tryParse(mapping.displayItem);
+				if (displayId != null && isValidItem(displayId.toString())) {
+					return Optional.of(displayId);
+				}
+				return Optional.empty();
+			}
+		}
+		return Optional.empty();
+	}
+
+	public boolean addVisualItemMapping(Identifier sourceId, Identifier displayId) {
+		if (!isValidItem(sourceId.toString()) || !isValidItem(displayId.toString())
+				|| sourceId.equals(displayId) || hasVisualSource(sourceId.toString())) {
+			return false;
+		}
+		visualItemMappings.add(new VisualItemMapping(sourceId.toString(), displayId.toString()));
+		return true;
+	}
+
+	public boolean setVisualSource(VisualItemMapping mapping, Identifier sourceId) {
+		if (!visualItemMappings.contains(mapping) || !isValidItem(sourceId.toString())
+				|| sourceId.toString().equals(mapping.displayItem)
+				|| visualItemMappings.stream().anyMatch(other -> other != mapping
+					&& other.sourceItem.equals(sourceId.toString()))) {
+			return false;
+		}
+		mapping.sourceItem = sourceId.toString();
+		return true;
+	}
+
+	public boolean setVisualDisplay(VisualItemMapping mapping, Identifier displayId) {
+		if (!visualItemMappings.contains(mapping) || !isValidItem(displayId.toString())
+				|| displayId.toString().equals(mapping.sourceItem)) {
+			return false;
+		}
+		mapping.displayItem = displayId.toString();
+		return true;
+	}
+
+	private boolean hasVisualSource(String sourceId) {
+		return visualItemMappings.stream().anyMatch(mapping -> mapping != null && sourceId.equals(mapping.sourceItem));
+	}
+
 	/** Repairs missing, unknown or duplicate values (e.g. a hand-edited or old file). */
 	private void sanitize() {
 		if (mode == null) {
@@ -147,6 +217,19 @@ public final class VeloraConfig {
 		if (winItem.equals(loseItem)) {
 			loseItem = winItem.equals(DEFAULT_LOSE_ITEM) ? DEFAULT_WIN_ITEM : DEFAULT_LOSE_ITEM;
 		}
+		if (visualItemMappings == null) {
+			visualItemMappings = new ArrayList<>();
+		}
+		List<VisualItemMapping> validMappings = new ArrayList<>();
+		Set<String> sources = new HashSet<>();
+		for (VisualItemMapping mapping : visualItemMappings) {
+			if (mapping == null || !isValidItem(mapping.sourceItem) || !isValidItem(mapping.displayItem)
+					|| mapping.sourceItem.equals(mapping.displayItem) || !sources.add(mapping.sourceItem)) {
+				continue;
+			}
+			validMappings.add(mapping);
+		}
+		visualItemMappings = validMappings;
 	}
 
 	private static boolean isValidItem(String id) {

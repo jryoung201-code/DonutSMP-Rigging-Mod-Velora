@@ -93,6 +93,17 @@ public final class DisplayResolver {
 		return Optional.ofNullable(loseStack.get(DataComponentTypes.ITEM_MODEL));
 	}
 
+	/** Returns a new render-only stack for a configured substitution, never the original stack. */
+	public static Optional<ItemStack> visualSwapStack(ItemStack originalStack) {
+		if (originalStack == null || originalStack.isEmpty()) {
+			return Optional.empty();
+		}
+
+		String sourceId = Registries.ITEM.getId(originalStack.getItem()).toString();
+		return VeloraConfig.get().visualDisplayItemId(sourceId)
+				.map(displayId -> new ItemStack(Registries.ITEM.get(displayId)));
+	}
+
 	private static Optional<SlotDisplay> resolveItemName(VeloraConfig config, ItemStack stack, int position) {
 		String itemId = Registries.ITEM.getId(stack.getItem()).toString();
 		DisplayPattern pattern = config.pattern;

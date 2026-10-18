@@ -33,6 +33,7 @@ public class VeloraConfigScreen extends Screen {
 	private ButtonWidget overrideButton;
 	private ButtonWidget winItemButton;
 	private ButtonWidget loseItemButton;
+	private ButtonWidget visualItemSwapButton;
 
 	public VeloraConfigScreen(Screen parent) {
 		super(Text.literal("Velora Settings"));
@@ -105,6 +106,11 @@ public class VeloraConfigScreen extends Screen {
 						config.winItemId(),
 						config::setLoseItem)))
 				.dimensions(x, y, BUTTON_WIDTH, BUTTON_HEIGHT).build());
+		y += ROW_STEP;
+
+		visualItemSwapButton = addDrawableChild(ButtonWidget.builder(Text.literal("Visual Item Swap..."), button ->
+				this.client.setScreen(new VisualItemSwapScreen(this)))
+				.dimensions(x, y, BUTTON_WIDTH, BUTTON_HEIGHT).build());
 
 		addDrawableChild(ButtonWidget.builder(ScreenTexts.DONE, button -> close())
 				.dimensions(x, this.height - 28, BUTTON_WIDTH, BUTTON_HEIGHT).build());
@@ -124,6 +130,7 @@ public class VeloraConfigScreen extends Screen {
 		overrideButton.setMessage(Text.literal("Map 9 Local Override: " + (config.map9LocalOverride ? "ON" : "OFF")));
 		winItemButton.setMessage(Text.literal("WIN Item: " + itemName(config.winItemId())));
 		loseItemButton.setMessage(Text.literal("LOSE Item: " + itemName(config.loseItemId())));
+		visualItemSwapButton.setMessage(Text.literal("Visual Item Swap..."));
 
 		// Item pickers only matter in Item Names mode, the override only in Maps mode.
 		item1Button.active = itemMode;
@@ -151,7 +158,7 @@ public class VeloraConfigScreen extends Screen {
 	private void drawActiveMapping(DrawContext context) {
 		VeloraConfig config = VeloraConfig.get();
 		int centerX = this.width / 2;
-		int y = FIRST_ROW_Y + 8 * ROW_STEP + 4;
+		int y = FIRST_ROW_Y + 9 * ROW_STEP + 4;
 		int left = centerX - BUTTON_WIDTH / 2;
 		int cellsStart = left + 70;
 
