@@ -31,19 +31,15 @@ public final class VeloraConfig {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private static final Path PATH = FabricLoader.getInstance().getConfigDir().resolve("velora.json");
 
-	private static final String DEFAULT_ITEM_1 = "minecraft:paper";
-	private static final String DEFAULT_ITEM_2 = "minecraft:book";
 	private static final String DEFAULT_WIN_ITEM = "minecraft:paper";
 	private static final String DEFAULT_LOSE_ITEM = "minecraft:diamond";
 
 	private static VeloraConfig instance = new VeloraConfig();
 
 	public DisplayMode mode = DisplayMode.ITEM_NAMES;
-	/** Item shown with the "lower" numbers (registry id). */
-	public String item1 = DEFAULT_ITEM_1;
-	/** Item shown with the "higher" numbers (registry id). Always different from item1. */
-	public String item2 = DEFAULT_ITEM_2;
 	public DisplayPattern pattern = DisplayPattern.NORMAL;
+	/** Display number for each numeric custom name (1-9), independent of item type. */
+	public int[] itemNameMappings;
 	public boolean map9LocalOverride = false;
 	public String winItem = DEFAULT_WIN_ITEM;
 	public String loseItem = DEFAULT_LOSE_ITEM;
@@ -92,13 +88,6 @@ public final class VeloraConfig {
 		}
 	}
 
-	public Identifier item1Id() {
-		return Identifier.tryParse(item1);
-	}
-
-	public Identifier item2Id() {
-		return Identifier.tryParse(item2);
-	}
 
 	public Identifier winItemId() {
 		return Identifier.tryParse(winItem);
@@ -108,23 +97,6 @@ public final class VeloraConfig {
 		return Identifier.tryParse(loseItem);
 	}
 
-	/** @return false (and changes nothing) if the item is already used as Item 2. */
-	public boolean setItem1(Identifier id) {
-		if (id.toString().equals(item2)) {
-			return false;
-		}
-		item1 = id.toString();
-		return true;
-	}
-
-	/** @return false (and changes nothing) if the item is already used as Item 1. */
-	public boolean setItem2(Identifier id) {
-		if (id.toString().equals(item1)) {
-			return false;
-		}
-		item2 = id.toString();
-		return true;
-	}
 
 	public boolean setWinItem(Identifier id) {
 		if (id.toString().equals(loseItem)) {
@@ -199,14 +171,23 @@ public final class VeloraConfig {
 		if (pattern == null) {
 			pattern = DisplayPattern.NORMAL;
 		}
-		if (!isValidItem(item1)) {
-			item1 = DEFAULT_ITEM_1;
+		// Migrate older configs that picked one ITEM1 and one ITEM2. Carry over the
+		// previous ITEM2 sequence as a default, now applying it to every item type.
+		if (itemNameMappings == null || itemNameMappings.length != DisplayPattern.SLOT_COUNT) {
+			int[] migrated = new int[DisplayPattern.SLOT_COUNT];
+			for (int i = 0; i < migrated.length; i++) {
+				migrated[i] = pattern.higherNumber(i);
+			}
+			if (itemNameMappings != null) {
+				System.arraycopy(itemNameMappings, 0, migrated, 0,
+						Math.min(itemNameMappings.length, migrated.length));
+			}
+			itemNameMappings = migrated;
 		}
-		if (!isValidItem(item2)) {
-			item2 = DEFAULT_ITEM_2;
-		}
-		if (item1.equals(item2)) {
-			item2 = item1.equals(DEFAULT_ITEM_2) ? DEFAULT_ITEM_1 : DEFAULT_ITEM_2;
+		for (int i = 0; i < itemNameMappings.length; i++) {
+			if (itemNameMappings[i] < 1 || itemNameMappings[i] > DisplayPattern.SLOT_COUNT) {
+				itemNameMappings[i] = pattern.higherNumber(i);
+			}
 		}
 		if (!isValidItem(winItem)) {
 			winItem = DEFAULT_WIN_ITEM;

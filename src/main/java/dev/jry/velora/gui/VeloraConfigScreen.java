@@ -27,8 +27,7 @@ public class VeloraConfigScreen extends Screen {
 	private final Screen parent;
 
 	private ButtonWidget modeButton;
-	private ButtonWidget item1Button;
-	private ButtonWidget item2Button;
+	private ButtonWidget nameMappingsButton;
 	private ButtonWidget patternButton;
 	private ButtonWidget overrideButton;
 	private ButtonWidget winItemButton;
@@ -53,23 +52,8 @@ public class VeloraConfigScreen extends Screen {
 		}).dimensions(x, y, BUTTON_WIDTH, BUTTON_HEIGHT).build());
 		y += ROW_STEP;
 
-		item1Button = addDrawableChild(ButtonWidget.builder(Text.empty(), button ->
-				this.client.setScreen(new ItemPickerScreen(
-						this,
-						Text.literal("Select Item 1 (Lower Numbers)"),
-						config.item1Id(),
-						config.item2Id(),
-						id -> config.setItem1(id))))
-				.dimensions(x, y, BUTTON_WIDTH, BUTTON_HEIGHT).build());
-		y += ROW_STEP;
-
-		item2Button = addDrawableChild(ButtonWidget.builder(Text.empty(), button ->
-				this.client.setScreen(new ItemPickerScreen(
-						this,
-						Text.literal("Select Item 2 (Higher Numbers)"),
-						config.item2Id(),
-						config.item1Id(),
-						id -> config.setItem2(id))))
+		nameMappingsButton = addDrawableChild(ButtonWidget.builder(Text.empty(), button ->
+				this.client.setScreen(new NameMappingScreen(this)))
 				.dimensions(x, y, BUTTON_WIDTH, BUTTON_HEIGHT).build());
 		y += ROW_STEP;
 
@@ -124,8 +108,7 @@ public class VeloraConfigScreen extends Screen {
 		boolean itemMode = config.mode == DisplayMode.ITEM_NAMES;
 
 		modeButton.setMessage(Text.literal("Display Mode: " + config.mode.label()));
-		item1Button.setMessage(Text.literal("Item 1 (Lower Numbers): " + itemName(config.item1Id())));
-		item2Button.setMessage(Text.literal("Item 2 (Higher Numbers): " + itemName(config.item2Id())));
+		nameMappingsButton.setMessage(Text.literal("Item Name Mappings..."));
 		patternButton.setMessage(Text.literal("Display Pattern: " + config.pattern.label()));
 		overrideButton.setMessage(Text.literal("Map 9 Local Override: " + (config.map9LocalOverride ? "ON" : "OFF")));
 		winItemButton.setMessage(Text.literal("WIN Item: " + itemName(config.winItemId())));
@@ -133,8 +116,8 @@ public class VeloraConfigScreen extends Screen {
 		visualItemSwapButton.setMessage(Text.literal("Visual Item Swap..."));
 
 		// Item pickers only matter in Item Names mode, the override only in Maps mode.
-		item1Button.active = itemMode;
-		item2Button.active = itemMode;
+		nameMappingsButton.active = itemMode;
+		patternButton.active = !itemMode;
 		overrideButton.active = !itemMode;
 	}
 
@@ -148,7 +131,7 @@ public class VeloraConfigScreen extends Screen {
 		context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 14, 0xFFFFFF);
 		context.drawCenteredTextWithShadow(this.textRenderer,
 				Text.literal("WIN / LOSE ITEMS (P toggle: " + (VeloraConfig.get().winLoseEnabled ? "ON" : "OFF") + ")"),
-				this.width / 2, FIRST_ROW_Y + 5 * ROW_STEP + 2, 0xFFFFFF);
+				this.width / 2, FIRST_ROW_Y + 4 * ROW_STEP + 2, 0xFFFFFF);
 		if (this.height >= 360) {
 			drawActiveMapping(context);
 		}
@@ -158,7 +141,7 @@ public class VeloraConfigScreen extends Screen {
 	private void drawActiveMapping(DrawContext context) {
 		VeloraConfig config = VeloraConfig.get();
 		int centerX = this.width / 2;
-		int y = FIRST_ROW_Y + 9 * ROW_STEP + 4;
+		int y = FIRST_ROW_Y + 7 * ROW_STEP + 4;
 		int left = centerX - BUTTON_WIDTH / 2;
 		int cellsStart = left + 70;
 
@@ -170,9 +153,9 @@ public class VeloraConfigScreen extends Screen {
 		y += 12;
 
 		if (config.mode == DisplayMode.ITEM_NAMES) {
-			drawRow(context, "Item 1", left, cellsStart, y, 0xFFFFFF55, config.pattern::lowerNumber);
+			drawRow(context, "Name", left, cellsStart, y, 0xFFFFFF55, DisplayPattern.NORMAL::number);
 			y += 12;
-			drawRow(context, "Item 2", left, cellsStart, y, 0xFF55FFFF, config.pattern::higherNumber);
+			drawRow(context, "Shown as", left, cellsStart, y, 0xFF55FFFF, i -> config.itemNameMappings[i]);
 		} else {
 			drawRow(context, "Map art", left, cellsStart, y, 0xFFFFFF55, config.pattern::number);
 			y += 13;

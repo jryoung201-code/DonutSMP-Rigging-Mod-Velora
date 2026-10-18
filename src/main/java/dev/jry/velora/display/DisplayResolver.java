@@ -142,13 +142,10 @@ public final class DisplayResolver {
 				if (inventoryStack.isEmpty()) {
 					continue;
 				}
-				String itemId = Registries.ITEM.getId(inventoryStack.getItem()).toString();
 				String serverName = inventoryStack.get(DataComponentTypes.CUSTOM_NAME) == null
 						? null : inventoryStack.get(DataComponentTypes.CUSTOM_NAME).getString();
-				// Use the configured pattern for the item's identity: ITEM1 uses the lower
-				// pattern, ITEM2 uses the higher pattern. The vacancy follows that displayed number.
-				OptionalInt displayedNumber = ItemNameMapping.mappedNumber(itemId, serverName,
-						config.item1, config.item2, config.pattern);
+				// The numeric custom name controls the mapping, irrespective of item type.
+				OptionalInt displayedNumber = ItemNameMapping.mappedNumber(serverName, config.itemNameMappings);
 				if (displayedNumber.isEmpty()) {
 					continue;
 				}
@@ -203,12 +200,10 @@ public final class DisplayResolver {
 	}
 
 	private static Optional<SlotDisplay> resolveItemName(VeloraConfig config, ItemStack stack, int position) {
-		String itemId = Registries.ITEM.getId(stack.getItem()).toString();
 		String realName = stack.get(DataComponentTypes.CUSTOM_NAME) == null
 				? null
 				: stack.get(DataComponentTypes.CUSTOM_NAME).getString().trim();
-		OptionalInt number = ItemNameMapping.mappedNumber(itemId, realName,
-				config.item1, config.item2, config.pattern);
+		OptionalInt number = ItemNameMapping.mappedNumber(realName, config.itemNameMappings);
 		if (number.isEmpty()) {
 			return Optional.empty();
 		}

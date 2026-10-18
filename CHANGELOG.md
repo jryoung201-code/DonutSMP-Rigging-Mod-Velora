@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.9-pre-8
+
+- Remove the ITEM1 and ITEM2 item-type selectors from settings.
+- Add per-name mappings so any item with numeric custom name 1–9 uses the same configured displayed number.
+- Preserve map-art pattern controls and cancellation of outdated build runs.
+
 ## 1.1.9-pre-4
 
 - Use the configured ITEM1/ITEM2 patterns for Dropper item labels and visual-vacancy mapping.
