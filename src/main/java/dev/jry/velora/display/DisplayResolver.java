@@ -134,15 +134,14 @@ public final class DisplayResolver {
 				String itemId = Registries.ITEM.getId(inventoryStack.getItem()).toString();
 				String serverName = inventoryStack.get(DataComponentTypes.CUSTOM_NAME) == null
 						? null : inventoryStack.get(DataComponentTypes.CUSTOM_NAME).getString();
-				// The Dropper vacancy follows the server's actual item number.
-				// Example: a book named "2" makes the second visual slot appear empty,
-				// even if the configured inventory display pattern would show it as 6.
-				OptionalInt serverNumber = ItemNameMapping.serverNumberForDisplayedName(itemId, serverName,
-						config.item1, config.item2, DisplayPattern.NORMAL);
-				if (serverNumber.isEmpty()) {
+				// Use the configured pattern for the item's identity: ITEM1 uses the lower
+				// pattern, ITEM2 uses the higher pattern. The vacancy follows that displayed number.
+				OptionalInt displayedNumber = ItemNameMapping.mappedNumber(itemId, serverName,
+						config.item1, config.item2, config.pattern);
+				if (displayedNumber.isEmpty()) {
 					continue;
 				}
-				int targetSlot = serverNumber.getAsInt() - 1;
+				int targetSlot = displayedNumber.getAsInt() - 1;
 				if (targetSlot >= 0 && targetSlot < containerSlots.length
 						&& occupied[targetSlot] && targetSlot != emptySource) {
 					int[] requestedDestinations = new int[DisplayPattern.SLOT_COUNT];
@@ -197,13 +196,12 @@ public final class DisplayResolver {
 		String realName = stack.get(DataComponentTypes.CUSTOM_NAME) == null
 				? null
 				: stack.get(DataComponentTypes.CUSTOM_NAME).getString().trim();
-		if (realName == null || !realName.matches("[1-9]")) {
+		OptionalInt number = ItemNameMapping.mappedNumber(itemId, realName,
+				config.item1, config.item2, config.pattern);
+		if (number.isEmpty()) {
 			return Optional.empty();
 		}
-		// Preserve the actual server-side number in the Dropper display.
-		// The pattern can style player inventory labels, but must not turn a real "2" into "6" here.
-		int number = Integer.parseInt(realName);
-		return Optional.of(new SlotDisplay(String.valueOf(number), number, null));
+		return Optional.of(new SlotDisplay(String.valueOf(number.getAsInt()), number.getAsInt(), null));
 	}
 
 	private static Optional<SlotDisplay> resolveMap(VeloraConfig config, ItemStack stack, int position) {
