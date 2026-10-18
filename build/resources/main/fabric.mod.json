@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "velora",
-  "version": "1.1.2",
+  "version": "1.1.8f",
   "name": "Velora",
   "description": "A lightweight client-side Minecraft utility focused on customization and convenience.",
   "authors": [
