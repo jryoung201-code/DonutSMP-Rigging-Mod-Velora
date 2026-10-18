@@ -113,24 +113,45 @@ public final class DisplayResolver {
 		}
 
 		boolean[] occupied = new boolean[DisplayPattern.SLOT_COUNT];
-		int[] requestedDestinations = new int[DisplayPattern.SLOT_COUNT];
-		Arrays.fill(requestedDestinations, -1);
+		int emptySource = -1;
 		for (int source = 0; source < containerSlots.length; source++) {
-			Slot slot = containerSlots[source];
-			occupied[source] = slot.hasStack();
-			if (occupied[source]) {
-				ItemStack stack = slot.getStack();
-				String itemId = Registries.ITEM.getId(stack.getItem()).toString();
-				String customName = stack.get(DataComponentTypes.CUSTOM_NAME) == null
-						? null : stack.get(DataComponentTypes.CUSTOM_NAME).getString();
-				OptionalInt destination = ItemNameMapping.dropperDestination(itemId, customName, source,
-						VeloraConfig.get().item1, VeloraConfig.get().item2, VeloraConfig.get().pattern);
-				if (destination.isPresent()) {
-					requestedDestinations[source] = destination.getAsInt();
-				}
+			occupied[source] = containerSlots[source].hasStack();
+			if (!occupied[source] && emptySource < 0) {
+				emptySource = source;
 			}
 		}
-		return VisualSlotMapping.destinations(occupied, requestedDestinations).orElse(null);
+
+		// The number comes from the configured item in the player's inventory/hotbar,
+		// not from the contents or slot index of the Dropper itself.
+		if (emptySource >= 0) {
+			VeloraConfig config = VeloraConfig.get();
+			int playerStart = DisplayPattern.SLOT_COUNT;
+			for (int i = playerStart; i < screen.getScreenHandler().slots.size(); i++) {
+				ItemStack inventoryStack = screen.getScreenHandler().slots.get(i).getStack();
+				if (inventoryStack.isEmpty()) {
+					continue;
+				}
+				String itemId = Registries.ITEM.getId(inventoryStack.getItem()).toString();
+				String displayedName = inventoryStack.get(DataComponentTypes.CUSTOM_NAME) == null
+						? null : inventoryStack.get(DataComponentTypes.CUSTOM_NAME).getString();
+				OptionalInt serverNumber = ItemNameMapping.serverNumberForDisplayedName(itemId,
+						displayedName, config.item1, config.item2, config.pattern);
+				if (serverNumber.isEmpty()) {
+					continue;
+				}
+				int targetSlot = serverNumber.getAsInt() - 1;
+				if (targetSlot >= 0 && targetSlot < containerSlots.length
+						&& occupied[targetSlot] && targetSlot != emptySource) {
+					int[] requestedDestinations = new int[DisplayPattern.SLOT_COUNT];
+					Arrays.fill(requestedDestinations, -1);
+					requestedDestinations[targetSlot] = emptySource;
+					return VisualSlotMapping.destinations(occupied, requestedDestinations).orElse(null);
+				}
+				// Only one active inventory number controls the visual vacancy at a time.
+				break;
+			}
+		}
+		return null;
 	}
 
 	/** Returns the selected LOSE item's model id for WIN/LOSE stacks when the visual toggle is on. */
